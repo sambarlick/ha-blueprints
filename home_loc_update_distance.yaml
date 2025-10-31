@@ -1,10 +1,9 @@
 blueprint:
   name: Home Location Update - Distance
   description: >-
-    Dynamically updates the 'zone.home' location when a device's
-    geocoded location changes by more than a specified distance.
-    This filters out GPS jitter but allows 'zone.home' to follow
-    the device to a new location (e.g., a hotel or relative's house).
+    Updates the core Home Assistant location (defined in configuration.yaml) 
+    when a geocoded sensor moves more than a specified distance. 
+    This filters GPS jitter but allows the HA location to follow the device.
   domain: automation
   
   input:
@@ -19,13 +18,13 @@ blueprint:
       name: Update Threshold (Meters)
       description: >-
         The distance the sensor must move from the *current* 'zone.home'
-        before the location is updated. Recommended: 50-100 meters.
+        before the location is updated. Recommended: Over 100 meters.
       selector:
         number:
           min: 10
           max: 1000
           unit_of_measurement: m
-      default: 50
+      default: 100
 
 mode: single
 
