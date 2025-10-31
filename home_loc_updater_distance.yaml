@@ -1,0 +1,57 @@
+blueprint:
+  name: Home Location Update - Distance
+  description: >-
+    Dynamically updates the 'zone.home' location when a device's
+    geocoded location changes by more than a specified distance.
+    This filters out GPS jitter but allows 'zone.home' to follow
+    the device to a new location (e.g., a hotel or relative's house).
+  domain: automation
+  
+  input:
+    geocoded_sensor:
+      name: Geocoded Location Sensor
+      description: Select the sensor that has the 'location' attribute (e.g., sensor.my_phone_geocoded_location).
+      selector:
+        entity:
+          domain: sensor
+    
+    distance_threshold:
+      name: Update Threshold (Meters)
+      description: >-
+        The distance the sensor must move from the *current* 'zone.home'
+        before the location is updated. Recommended: 50-100 meters.
+      selector:
+        number:
+          min: 10
+          max: 1000
+          unit_of_measurement: m
+      default: 50
+
+mode: single
+
+# The !input is fine here as it's not inside a template
+trigger:
+  - platform: state
+    entity_id: !input geocoded_sensor
+    attribute: location
+
+# Load the !input into a variable *before* the condition template runs
+variables:
+  threshold: !input distance_threshold
+
+# Use the local 'threshold' variable inside the template
+condition:
+  - condition: template
+    value_template: >-
+      {% set home_lat = state_attr('zone.home', 'latitude') | float(0) %}
+      {% set home_lon = state_attr('zone.home', 'longitude') | float(0) %}
+      {% set dev_lat = trigger.to_state.attributes.location[0] | float(0) %}
+      {% set dev_lon = trigger.to_state.attributes.location[1] | float(0) %}
+      {{ distance(home_lat, home_lon, dev_lat, dev_lon) > threshold }}
+
+action:
+  - service: homeassistant.set_location
+    data:
+      latitude: "{{ trigger.to_state.attributes.location[0] }}"
+      longitude: "{{ trigger.to_state.attributes.location[1] }}"
+      

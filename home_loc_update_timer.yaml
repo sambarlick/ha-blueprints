@@ -1,0 +1,50 @@
+blueprint:
+  name: Home Location Update - Timer
+  description: >-
+    Updates the 'zone.home' location on a user-defined timer
+    using the current location from a geocoded sensor.
+  domain: automation
+  
+  input:
+    geocoded_sensor:
+      name: Geocoded Location Sensor
+      description: Select the sensor that has the 'location' attribute.
+      selector:
+        entity:
+          domain: sensor
+    
+    update_interval:
+      name: Update Interval (Minutes)
+      description: How often (in minutes) to run the update.
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: min
+      default: 30
+
+mode: single
+
+# Load the !input into a variable *before* the trigger template runs
+trigger_variables:
+  interval: !input update_interval
+
+# Use the local 'interval' variable inside the template
+trigger:
+  - platform: template
+    value_template: >-
+      {{ now().minute % interval == 0 }}
+
+# Load the !input into a variable *before* the action block runs
+variables:
+  sensor_entity: !input geocoded_sensor
+
+condition: []
+
+# Use the local 'sensor_entity' variable inside the template
+action:
+  - service: homeassistant.set_location
+    data:
+      latitude: "{{ state_attr(sensor_entity, 'location')[0] }}"
+      longitude: "{{ state_attr(sensor_entity, 'location')[1] }}"
+      
