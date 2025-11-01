@@ -1,0 +1,57 @@
+blueprint:
+  name: Automatic 'Moving' Toggle (Timer-Based)
+  description: >-
+    Automatically turns on a 'Moving' toggle when location changes
+    are detected, then turns it off after a set delay.
+    
+    REQUIRES an 'input_boolean' helper with the exact
+    entity ID: input_boolean.enable_home_location_tracking
+  domain: automation
+  
+  input:
+    location_movement_sensor:
+      name: Location Movement Sensor
+      description: "Select the sensor that reports 'Significant Location Change', 'Geographic Region Exited', etc."
+      selector:
+        entity:
+          domain: sensor
+
+    turn_off_delay:
+      name: Turn-Off Delay (Minutes)
+      description: "How long to wait after the *last* movement before turning the 'Moving' toggle OFF."
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: min
+
+# Use 'restart' mode. If this triggers again while the delay is running,
+# it will cancel the old run and start a new one (resetting the timer).
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input location_movement_sensor
+    to: "Significant Location Change"
+    
+  - platform: state
+    entity_id: !input location_movement_sensor
+    to: "Geographic Region Exited"
+
+condition: []
+
+action:
+  # 1. Turn the toggle ON
+  - service: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.enable_home_location_tracking
+      
+  # 2. Wait for the specified delay
+  - delay:
+      minutes: !input turn_off_delay
+      
+  # 3. If the delay finishes (wasn't restarted), turn the toggle OFF
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.enable_home_location_tracking
