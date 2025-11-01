@@ -1,0 +1,37 @@
+blueprint:
+  name: Home Location Update - Button
+  description: >-
+    Updates the core Home Assistant location to a device's current 
+    location when 'input_button.set_home_location' is pressed.
+    
+    REQUIRES an 'input_button' helper with the exact
+    entity ID: input_button.set_home_location
+  domain: automation
+  
+  input:
+    geocoded_sensor:
+      name: Geocoded Location Sensor
+      description: Select the sensor whose location will be used (e.g., your phone).
+      selector:
+        entity:
+          domain: sensor
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: input_button.set_home_location
+
+variables:
+  sensor_entity: !input geocoded_sensor
+
+condition:
+  # Failsafe: Only run if the sensor actually has a location
+  - condition: template
+    value_template: "{{ state_attr(sensor_entity, 'location') != none }}"
+
+action:
+  - service: homeassistant.set_location
+    data:
+      latitude: "{{ state_attr(sensor_entity, 'location')[0] }}"
+      longitude: "{{ state_attr(sensor_entity, 'location')[1] }}"
