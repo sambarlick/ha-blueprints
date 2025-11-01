@@ -24,14 +24,19 @@ trigger:
 
 variables:
   sensor_entity: !input geocoded_sensor
+  loc_attribute: "{{ state_attr(sensor_entity, 'location') or state_attr(sensor_entity, 'Location') }}"
 
 condition:
-  # Failsafe: Only run if the sensor actually has a location
+  # Check if the 'loc_attribute' variable we just created is valid
   - condition: template
-    value_template: "{{ state_attr(sensor_entity, 'location') != none }}"
+    value_template: >-
+      {{ loc_attribute is not none and 
+         loc_attribute is iterable and 
+         loc_attribute | length == 2 }}
 
 action:
+  # Use the 'loc_attribute' variable
   - service: homeassistant.set_location
     data:
-      latitude: "{{ state_attr(sensor_entity, 'location')[0] }}"
-      longitude: "{{ state_attr(sensor_entity, 'location')[1] }}"
+      latitude: "{{ loc_attribute[0] }}"
+      longitude: "{{ loc_attribute[1] }}"
